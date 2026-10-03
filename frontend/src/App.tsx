@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bell, Blocks, Box, Check, CheckCircle2, ChevronDown, Cloud, CloudCog, Command, Database, Download, Globe2, LayoutDashboard, LockKeyhole, Menu, Moon, MoreHorizontal, Network, Plus, Search, Server, Shield, ShieldCheck, Sparkles } from 'lucide-react'
+import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bell, Blocks, Box, Check, CheckCircle2, ChevronDown, Cloud, CloudCog, Database, Download, Globe2, LayoutDashboard, LockKeyhole, Menu, Moon, MoreHorizontal, Network, Plus, Search, Server, Shield, ShieldCheck, Sparkles } from 'lucide-react'
 import { awsServices, initialDeployments, regions } from './data/awsServices'
 import type { Proposal } from './types/cloud'
 import InteractiveInfrastructure from './pages/InteractiveInfrastructure'
@@ -11,6 +11,7 @@ import InteractiveSecurity from './pages/InteractiveSecurity'
 import { useLocalStorageState } from './hooks/useLocalStorageState'
 import CostChart from './components/CostChart'
 import { cloudApiGet } from './services/cloudApi'
+import CloudOpsMark from './components/CloudOpsMark'
 
 const routes = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'Workspace' },
@@ -28,7 +29,7 @@ const Icon = ({ name, size = 19 }: { name: string; size?: number }) => { const c
 function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation()
   return <><div className={`sidebar-overlay ${open ? 'show' : ''}`} onClick={onClose}/><aside className={`sidebar ${open ? 'mobile-open' : ''}`}>
-    <Link to="/dashboard" className="brand" onClick={onClose}><span className="brand-mark"><Command size={19}/></span><span>cloud<span className="brand-light">ops</span></span><span className="brand-version">PRO</span></Link>
+    <Link to="/dashboard" className="brand" onClick={onClose}><span className="brand-mark"><CloudOpsMark size={29}/></span><span>cloud<span className="brand-light">ops</span></span><span className="brand-version">PRO</span></Link>
     <button className="workspace-switch"><span className="workspace-avatar">N</span><span className="workspace-copy"><b>Northstar Studio</b><small>Starter workspace</small></span><ChevronDown size={15}/></button>
     {['Workspace', 'Architecture', 'Resources'].map(group => <div className="nav-group" key={group}><p className="nav-label">{group}</p>{routes.filter(r => r.group === group).map(r => <NavLink key={r.path} to={r.path} onClick={onClose} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><r.icon size={17}/><span>{r.label}</span>{r.badge && <span className="nav-badge">{r.badge}</span>}</NavLink>)}</div>)}
     <div className="sidebar-spacer"/><div className="sidebar-tip"><span className="tip-icon"><Sparkles size={15}/></span><b>Cloud tip</b><p>Activa MFA en cada usuario IAM para fortalecer tu cuenta.</p><Link to="/security" onClick={onClose}>Revisar seguridad <ArrowRight size={13}/></Link></div>

@@ -6,6 +6,64 @@
   white-space: nowrap;
 }
 
+/* Subtle page and card motion; the map stays readable while locations animate in. */
+@keyframes cloudops-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.app-shell { animation: cloudops-enter 420ms cubic-bezier(.2,.7,.2,1) both; }
+.main-content .page-heading,
+.main-content .panel,
+.main-content .infra-region-list,
+.main-content .info-callout {
+  animation: cloudops-enter 460ms cubic-bezier(.2,.7,.2,1) both;
+}
+.main-content .panel:nth-of-type(2) { animation-delay: 55ms; }
+.main-content .panel:nth-of-type(3) { animation-delay: 95ms; }
+.stat-card, .infra-region-tile, .service-mini, .interactive-service-card,
+.btn-primary, .btn-outline, .nav-link, .icon-button {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+.stat-card:hover, .infra-region-tile:hover, .interactive-service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .08);
+}
+
+/* Wider, taller world map with location labels limited to selected/deployed regions. */
+.infra-explorer { grid-template-columns: minmax(0, 2.15fr) minmax(285px, .75fr); gap: 18px; }
+.infra-map-card { padding: 22px; }
+.interactive-world-map { height: 535px; border-radius: 14px; }
+.interactive-continent { inset: 34px 0 0; height: calc(100% - 34px); }
+.infra-pin { width: 16px; height: 16px; }
+.pin-label { display: none; }
+.pin-show-label .pin-label { display: flex; }
+.pin-pulse { border-width: 2px; }
+.infra-map-footer { font-size: 10px; }
+
+@media (max-width: 1050px) {
+  .interactive-world-map { height: 460px; }
+}
+@media (max-width: 760px) {
+  .infra-explorer { grid-template-columns: minmax(0, 1fr); }
+  .interactive-world-map { height: 420px; }
+}
+
 @media (max-width: 720px) {
   .backend-indicator { display: none; }
+}
+
+@media (max-width: 500px) {
+  .interactive-world-map { height: 350px; }
+  .infra-map-card { padding: 14px; }
+  .infra-pin { width: 14px; height: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
 }

@@ -1,4 +1,5 @@
 import type { Service } from '../types/cloud'
+
 export const awsServices: Service[] = [
   { name: 'Amazon EC2', category: 'Compute', description: 'Capacidad de cómputo redimensionable en la nube.', function: 'Aloja el backend y los procesos de la aplicación.', status: 'Activo', monthly: 86, icon: 'server', color: 'blue' },
   { name: 'Amazon S3', category: 'Storage', description: 'Almacenamiento de objetos con alta durabilidad.', function: 'Guarda archivos, documentos y respaldos.', status: 'Activo', monthly: 24, icon: 'database', color: 'green' },
@@ -9,20 +10,51 @@ export const awsServices: Service[] = [
   { name: 'Amazon CloudFront', category: 'Networking', description: 'Red global de entrega de contenido (CDN).', function: 'Entrega contenido con menor latencia.', status: 'Planificado', monthly: 18, icon: 'cloud', color: 'pink' },
   { name: 'Amazon CloudWatch', category: 'Management', description: 'Observabilidad, métricas, registros y alarmas.', function: 'Monitorea recursos y detecta anomalías.', status: 'Planificado', monthly: 14, icon: 'activity', color: 'blue' },
 ]
+
+// Representative AWS commercial regions. Map latency values are educational estimates from Lima, not live measurements.
 export const regions = [
-  { name: 'US East (N. Virginia)', code: 'us-east-1', city: 'N. Virginia, Estados Unidos', status: 'Principal', services: 7, latency: '32 ms', color: 'blue' },
-  { name: 'South America (São Paulo)', code: 'sa-east-1', city: 'São Paulo, Brasil', status: 'DR / respaldo', services: 3, latency: '48 ms', color: 'green' },
-  { name: 'Europe (Frankfurt)', code: 'eu-central-1', city: 'Frankfurt, Alemania', status: 'Disponible', services: 0, latency: '—', color: 'violet' },
-  { name: 'Asia Pacific (Singapore)', code: 'ap-southeast-1', city: 'Singapur', status: 'Disponible', services: 0, latency: '—', color: 'orange' },
-  { name: 'Asia Pacific (Tokyo)', code: 'ap-northeast-1', city: 'Tokio, Japón', status: 'Disponible', services: 0, latency: '—', color: 'pink' },
-  { name: 'US West (Oregon)', code: 'us-west-2', city: 'Oregón, Estados Unidos', status: 'Disponible', services: 0, latency: '—', color: 'cyan' },
+  { name: 'US East (N. Virginia)', code: 'us-east-1', city: 'Virginia, United States', status: 'Principal', services: 7, latency: '32 ms', color: 'blue' },
+  { name: 'US East (Ohio)', code: 'us-east-2', city: 'Ohio, United States', status: 'Disponible', services: 0, latency: '95 ms', color: 'blue' },
+  { name: 'US West (N. California)', code: 'us-west-1', city: 'Northern California, United States', status: 'Disponible', services: 0, latency: '110 ms', color: 'cyan' },
+  { name: 'US West (Oregon)', code: 'us-west-2', city: 'Oregon, United States', status: 'Disponible', services: 0, latency: '92 ms', color: 'cyan' },
+  { name: 'Canada (Central)', code: 'ca-central-1', city: 'Montreal, Canada', status: 'Disponible', services: 0, latency: '115 ms', color: 'blue' },
+  { name: 'Canada West (Calgary)', code: 'ca-west-1', city: 'Calgary, Canada', status: 'Disponible', services: 0, latency: '125 ms', color: 'blue' },
+  { name: 'Mexico (Central)', code: 'mx-central-1', city: 'Queretaro, Mexico', status: 'Disponible', services: 0, latency: '80 ms', color: 'green' },
+  { name: 'South America (Sao Paulo)', code: 'sa-east-1', city: 'Sao Paulo, Brazil', status: 'DR / respaldo', services: 3, latency: '48 ms', color: 'green' },
+  { name: 'Europe (Ireland)', code: 'eu-west-1', city: 'Dublin, Ireland', status: 'Disponible', services: 0, latency: '170 ms', color: 'violet' },
+  { name: 'Europe (London)', code: 'eu-west-2', city: 'London, United Kingdom', status: 'Disponible', services: 0, latency: '165 ms', color: 'violet' },
+  { name: 'Europe (Paris)', code: 'eu-west-3', city: 'Paris, France', status: 'Disponible', services: 0, latency: '175 ms', color: 'violet' },
+  { name: 'Europe (Frankfurt)', code: 'eu-central-1', city: 'Frankfurt, Germany', status: 'Disponible', services: 0, latency: '180 ms', color: 'violet' },
+  { name: 'Europe (Stockholm)', code: 'eu-north-1', city: 'Stockholm, Sweden', status: 'Disponible', services: 0, latency: '195 ms', color: 'violet' },
+  { name: 'Europe (Milan)', code: 'eu-south-1', city: 'Milan, Italy', status: 'Disponible', services: 0, latency: '190 ms', color: 'violet' },
+  { name: 'Europe (Spain)', code: 'eu-south-2', city: 'Aragon, Spain', status: 'Disponible', services: 0, latency: '175 ms', color: 'violet' },
+  { name: 'Europe (Zurich)', code: 'eu-central-2', city: 'Zurich, Switzerland', status: 'Disponible', services: 0, latency: '185 ms', color: 'violet' },
+  { name: 'Africa (Cape Town)', code: 'af-south-1', city: 'Cape Town, South Africa', status: 'Disponible', services: 0, latency: '260 ms', color: 'orange' },
+  { name: 'Middle East (Bahrain)', code: 'me-south-1', city: 'Bahrain', status: 'Disponible', services: 0, latency: '235 ms', color: 'orange' },
+  { name: 'Middle East (UAE)', code: 'me-central-1', city: 'United Arab Emirates', status: 'Disponible', services: 0, latency: '245 ms', color: 'orange' },
+  { name: 'Israel (Tel Aviv)', code: 'il-central-1', city: 'Tel Aviv, Israel', status: 'Disponible', services: 0, latency: '240 ms', color: 'orange' },
+  { name: 'Asia Pacific (Mumbai)', code: 'ap-south-1', city: 'Mumbai, India', status: 'Disponible', services: 0, latency: '285 ms', color: 'orange' },
+  { name: 'Asia Pacific (Hyderabad)', code: 'ap-south-2', city: 'Hyderabad, India', status: 'Disponible', services: 0, latency: '295 ms', color: 'orange' },
+  { name: 'Asia Pacific (Hong Kong)', code: 'ap-east-1', city: 'Hong Kong', status: 'Disponible', services: 0, latency: '315 ms', color: 'orange' },
+  { name: 'Asia Pacific (Taipei)', code: 'ap-east-2', city: 'Taipei, Taiwan', status: 'Disponible', services: 0, latency: '325 ms', color: 'orange' },
+  { name: 'Asia Pacific (Tokyo)', code: 'ap-northeast-1', city: 'Tokyo, Japan', status: 'Disponible', services: 0, latency: '330 ms', color: 'pink' },
+  { name: 'Asia Pacific (Seoul)', code: 'ap-northeast-2', city: 'Seoul, South Korea', status: 'Disponible', services: 0, latency: '325 ms', color: 'pink' },
+  { name: 'Asia Pacific (Osaka)', code: 'ap-northeast-3', city: 'Osaka, Japan', status: 'Disponible', services: 0, latency: '335 ms', color: 'pink' },
+  { name: 'Asia Pacific (Singapore)', code: 'ap-southeast-1', city: 'Singapore', status: 'Disponible', services: 0, latency: '310 ms', color: 'orange' },
+  { name: 'Asia Pacific (Sydney)', code: 'ap-southeast-2', city: 'Sydney, Australia', status: 'Disponible', services: 0, latency: '340 ms', color: 'pink' },
+  { name: 'Asia Pacific (Jakarta)', code: 'ap-southeast-3', city: 'Jakarta, Indonesia', status: 'Disponible', services: 0, latency: '320 ms', color: 'orange' },
+  { name: 'Asia Pacific (Melbourne)', code: 'ap-southeast-4', city: 'Melbourne, Australia', status: 'Disponible', services: 0, latency: '345 ms', color: 'pink' },
+  { name: 'Asia Pacific (Malaysia)', code: 'ap-southeast-5', city: 'Malaysia', status: 'Disponible', services: 0, latency: '315 ms', color: 'orange' },
+  { name: 'Asia Pacific (New Zealand)', code: 'ap-southeast-6', city: 'New Zealand', status: 'Disponible', services: 0, latency: '360 ms', color: 'pink' },
+  { name: 'Asia Pacific (Thailand)', code: 'ap-southeast-7', city: 'Thailand', status: 'Disponible', services: 0, latency: '315 ms', color: 'orange' },
 ]
 
 export const initialDeployments: Record<string, string[]> = {
   'us-east-1': ['Amazon EC2', 'Amazon S3', 'Amazon RDS', 'AWS IAM', 'Amazon VPC', 'Amazon Route 53', 'Amazon CloudFront'],
   'sa-east-1': ['Amazon S3', 'Amazon RDS', 'Amazon VPC'],
-  'eu-central-1': [],
-  'ap-southeast-1': [],
-  'ap-northeast-1': [],
-  'us-west-2': [],
+  'us-east-2': [], 'us-west-1': [], 'us-west-2': [], 'ca-central-1': [], 'ca-west-1': [], 'mx-central-1': [],
+  'eu-west-1': [], 'eu-west-2': [], 'eu-west-3': [], 'eu-central-1': [], 'eu-north-1': [], 'eu-south-1': [], 'eu-south-2': [], 'eu-central-2': [],
+  'af-south-1': [], 'me-south-1': [], 'me-central-1': [], 'il-central-1': [], 'ap-south-1': [], 'ap-south-2': [], 'ap-east-1': [], 'ap-east-2': [],
+  'ap-northeast-1': [], 'ap-northeast-2': [], 'ap-northeast-3': [], 'ap-southeast-1': [], 'ap-southeast-2': [], 'ap-southeast-3': [],
+  'ap-southeast-4': [], 'ap-southeast-5': [], 'ap-southeast-6': [], 'ap-southeast-7': [],
 }

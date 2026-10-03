@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="brand" x1="8" y1="5" x2="57" y2="61" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8"/><stop offset=".52" stop-color="#2563EB"/><stop offset="1" stop-color="#4338CA"/>
+    </linearGradient>
+    <linearGradient id="cloud" x1="17" y1="22" x2="48" y2="47" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff"/><stop offset="1" stop-color="#C7E7FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="19" fill="url(#brand)"/>
+  <circle cx="48" cy="15" r="10" fill="#BAE6FD" fill-opacity=".18"/>
+  <path d="M18 39.5h27a8 8 0 0 0 .5-16 13.5 13.5 0 0 0-25.7 2.2A7 7 0 0 0 18 39.5Z" fill="url(#cloud)" fill-opacity=".16" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M22 45h20M26 49h12" stroke="#fff" stroke-opacity=".72" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="22" cy="31" r="2.1" fill="#fff"/><circle cx="32" cy="24" r="2.1" fill="#fff"/><circle cx="43" cy="31" r="2.1" fill="#fff"/>
+  <path d="m24 30 6-4m4 0 7 4" stroke="#fff" stroke-opacity=".85" stroke-width="1.6" stroke-linecap="round"/>
+</svg>
