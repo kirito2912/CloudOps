@@ -1,0 +1,11 @@
+.backend-indicator {
+  align-self: center;
+  margin-left: 12px;
+  color: #64748b;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .backend-indicator { display: none; }
+}
