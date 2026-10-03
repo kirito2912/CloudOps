@@ -32,7 +32,7 @@ Configura `VITE_CLOUD_API_URL` con la URL pública del backend, por ejemplo `htt
 
 ### Backend
 
-En Render crea un Web Service usando Root Directory `backend`. Build command `npm install`, start command `npm start`. `backend/render.yaml` documenta este servicio. Configura `FRONTEND_ORIGINS` con el origen publicado del frontend, por ejemplo `https://mi-cloudops.vercel.app` (sin barra final).
+En Render crea un Web Service usando Root Directory `backend`. Build command `npm install && npm run build`, start command `npm start`. `backend/render.yaml` documenta este servicio. Configura `FRONTEND_ORIGINS` con el origen publicado del frontend, por ejemplo `https://mi-cloudops.vercel.app` (sin barra final).
 
 El indicador del frontend comprueba `/health`. Las demás pantallas siguen usando sus datos de demostración/locales; la API todavía no está conectada a ellas.
 
