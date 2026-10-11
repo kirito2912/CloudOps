@@ -6,24 +6,71 @@ const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:5173')
   .map(origin => origin.trim())
   .filter(Boolean)
 
-const demoOverview = {
-  source: 'simulated',
-  account: 'Cuenta educativa de ejemplo',
-  region: 'us-east-1',
-  monthlyCostUsd: 242,
-  deployedRegions: 2,
-  services: 7,
-  updatedAt: new Date().toISOString(),
+// Estado inicial VACÍO - sin servicios desplegados
+function generateDemoOverview() {
+  return {
+    source: 'simulated',
+    account: 'Tu cuenta AWS',
+    region: 'us-east-1',
+    monthlyCostUsd: 0,
+    deployedRegions: 0,
+    services: 0,
+    activeResources: 0,
+    availability: 0,
+    updatedAt: new Date().toISOString(),
+  }
 }
 
-const demoResources = {
-  source: 'simulated',
-  region: 'us-east-1',
-  resources: [
-    { id: 'demo-ec2-1', type: 'Amazon EC2', state: 'running' },
-    { id: 'demo-rds-1', type: 'Amazon RDS', state: 'available' },
-    { id: 'demo-s3-1', type: 'Amazon S3', state: 'available' },
-  ],
+function generateDemoResources(region = 'us-east-1') {
+  return {
+    source: 'simulated',
+    region,
+    resources: [],
+    totalCount: 0,
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+function generateDemoCosts() {
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+  
+  // Generar historial VACÍO de los últimos 6 meses
+  const monthlyHistory = []
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(currentYear, currentMonth - i, 1)
+    monthlyHistory.push({
+      month: date.toISOString().slice(0, 7),
+      total: 0,
+    })
+  }
+  
+  return {
+    source: 'simulated',
+    currency: 'USD',
+    monthlyTotal: 0,
+    monthlyHistory,
+    breakdown: [],
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+function generateDemoSecurityFindings() {
+  return {
+    source: 'simulated',
+    score: 0,
+    totalFindings: 0,
+    findings: [],
+    complianceChecks: {
+      mfaEnabled: false,
+      encryptionAtRest: false,
+      securityGroupsReviewed: false,
+      iamPasswordPolicy: false,
+      cloudTrailEnabled: false,
+    },
+    updatedAt: new Date().toISOString(),
+  }
 }
 
 function sendJson(response, statusCode, body) {
@@ -53,15 +100,16 @@ const server = createServer((request, response) => {
 
   const url = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`)
   if (url.pathname === '/health') {
-    sendJson(response, 200, { status: 'ok', source: 'simulated' })
+    sendJson(response, 200, { status: 'ok', source: 'simulated', timestamp: new Date().toISOString() })
   } else if (url.pathname === '/overview') {
-    sendJson(response, 200, demoOverview)
+    sendJson(response, 200, generateDemoOverview())
   } else if (url.pathname === '/resources') {
-    sendJson(response, 200, { ...demoResources, region: url.searchParams.get('region') || demoResources.region })
+    const region = url.searchParams.get('region') || 'us-east-1'
+    sendJson(response, 200, generateDemoResources(region))
   } else if (url.pathname === '/costs') {
-    sendJson(response, 200, { source: 'simulated', currency: 'USD', monthlyTotal: 242, items: [] })
+    sendJson(response, 200, generateDemoCosts())
   } else if (url.pathname === '/security/findings') {
-    sendJson(response, 200, { source: 'simulated', findings: [{ id: 'demo-key-rotation', severity: 'medium', status: 'review' }] })
+    sendJson(response, 200, generateDemoSecurityFindings())
   } else {
     sendJson(response, 404, { error: 'Not found' })
   }

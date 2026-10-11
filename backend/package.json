@@ -9,6 +9,6 @@
     "build": "node --check src/server.mjs"
   },
   "engines": {
-    "node": ">=22 <23"
+    "node": ">=18"
   }
 }
