@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { AppDataProvider } from './context/AppDataContext'
 import App from './App'
 import BrandIntro from './components/BrandIntro'
 import './styles.css'
@@ -22,7 +23,7 @@ function CloudOpsExperience() {
     }
   }, [showIntro])
 
-  return <><App />{showIntro && <BrandIntro onFinish={finishIntro} />}</>
+  return <AppDataProvider><App />{showIntro && <BrandIntro onFinish={finishIntro} />}</AppDataProvider>
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter><CloudOpsExperience /></BrowserRouter></React.StrictMode>)
