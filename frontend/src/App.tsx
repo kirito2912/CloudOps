@@ -1,0 +1,172 @@
+import { useEffect, useState } from 'react'
+import type { FormEvent, ReactNode } from 'react'
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bell, Blocks, Box, Check, CheckCircle2, ChevronDown, Cloud, CloudCog, Database, Download, Globe2, LayoutDashboard, LockKeyhole, Menu, Moon, MoreHorizontal, Network, Plus, Search, Server, Shield, ShieldCheck, Sparkles } from 'lucide-react'
+import { awsServices, regions } from './data/awsServices'
+
+import InteractiveInfrastructure from './pages/InteractiveInfrastructure'
+import InteractiveNetwork from './pages/InteractiveNetwork'
+import InteractiveServices from './pages/InteractiveServices'
+import InteractiveSecurity from './pages/InteractiveSecurity'
+import CostChart from './components/CostChart'
+import { cloudApiGet } from './services/cloudApi'
+import CloudOpsMark from './components/CloudOpsMark'
+import { useAppData } from './context/AppDataContext'
+
+const routes: Array<{path: string; label: string; icon: any; group: string; badge?: string}> = [
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'Workspace' },
+  { path: '/planning', label: 'Planificación cloud', icon: CloudCog, group: 'Workspace' },
+  { path: '/costs', label: 'Costos', icon: Activity, group: 'Workspace' },
+  { path: '/infrastructure', label: 'Infraestructura global', icon: Globe2, group: 'Architecture' },
+  { path: '/security', label: 'Seguridad & IAM', icon: ShieldCheck, group: 'Architecture' },
+  { path: '/network', label: 'Arquitectura de red', icon: Network, group: 'Architecture' },
+  { path: '/services', label: 'Servicios AWS', icon: Blocks, group: 'Resources' },
+]
+const titles: Record<string, [string, string]> = {
+  '/dashboard': ['Dashboard', 'Vista general de tu entorno cloud.'], '/planning': ['Planificación cloud', 'Diseña y documenta tu próxima solución.'], '/costs': ['Costos & economía cloud', 'Estimaciones claras para tomar mejores decisiones.'], '/infrastructure': ['Infraestructura global', 'Tu arquitectura distribuida en AWS.'], '/security': ['Seguridad & IAM', 'Controla la postura de seguridad y los accesos.'], '/network': ['Arquitectura de red', 'Visualiza cómo se conectan tus componentes.'], '/services': ['Servicios AWS', 'Explora los servicios de tu arquitectura.'],
+}
+const Icon = ({ name, size = 19 }: { name: string; size?: number }) => { const common = { size, strokeWidth: 1.8 }; switch (name) { case 'server': return <Server {...common}/>; case 'database': return <Database {...common}/>; case 'shield': return <Shield {...common}/>; case 'network': return <Network {...common}/>; case 'globe': return <Globe2 {...common}/>; case 'cloud': return <Cloud {...common}/>; case 'activity': return <Activity {...common}/>; default: return <Box {...common}/> } }
+function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const location = useLocation()
+  return <><div className={`sidebar-overlay ${open ? 'show' : ''}`} onClick={onClose}/><aside className={`sidebar ${open ? 'mobile-open' : ''}`}>
+    <Link to="/dashboard" className="brand" onClick={onClose}><span className="brand-mark"><CloudOpsMark size={29}/></span><span>cloud<span className="brand-light">ops</span></span><span className="brand-version">PRO</span></Link>
+    <button className="workspace-switch"><span className="workspace-avatar">N</span><span className="workspace-copy"><b>Northstar Studio</b><small>Starter workspace</small></span><ChevronDown size={15}/></button>
+    {['Workspace', 'Architecture', 'Resources'].map(group => <div className="nav-group" key={group}><p className="nav-label">{group}</p>{routes.filter(r => r.group === group).map(r => <NavLink key={r.path} to={r.path} onClick={onClose} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><r.icon size={17}/><span>{r.label}</span>{r.badge && <span className="nav-badge">{r.badge}</span>}</NavLink>)}</div>)}
+    <div className="sidebar-spacer"/><div className="sidebar-tip"><span className="tip-icon"><Sparkles size={15}/></span><b>Cloud tip</b><p>Activa MFA en cada usuario IAM para fortalecer tu cuenta.</p><Link to="/security" onClick={onClose}>Revisar seguridad <ArrowRight size={13}/></Link></div>
+    <button className="profile"><span className="profile-avatar">CM</span><span className="profile-copy"><b>Camila Mendoza</b><small>Cloud architect</small></span><MoreHorizontal size={19}/></button>
+    <span className="current-path" aria-hidden="true">{location.pathname}</span>
+  </aside></>
+}
+function Header({ onMenu, onTheme }: { onMenu: () => void; onTheme: () => void }) {
+  const location = useLocation(); const [query, setQuery] = useState(''); const [searchOpen, setSearchOpen] = useState(false); const [notifications, setNotifications] = useState(false)
+  const [apiStatus, setApiStatus] = useState<'demo' | 'checking' | 'online' | 'offline'>(import.meta.env.VITE_CLOUD_API_URL ? 'checking' : 'demo')
+  useEffect(() => {
+    if (!import.meta.env.VITE_CLOUD_API_URL) return
+    let active = true
+    cloudApiGet<{ status: string }>('/health').then(() => { if (active) setApiStatus('online') }).catch(() => { if (active) setApiStatus('offline') })
+    return () => { active = false }
+  }, [])
+  const matches = routes.filter(r => r.label.toLowerCase().includes(query.toLowerCase()))
+  return <header className="topbar"><div className="topbar-left"><button className="icon-button mobile-menu" onClick={onMenu} aria-label="Abrir menú"><Menu size={20}/></button><div className="breadcrumbs"><span>Cloud workspace</span><span className="crumb-divider">/</span><b>{titles[location.pathname]?.[0] ?? 'Dashboard'}</b></div></div><div className="topbar-actions">
+    <div className={`searchbox ${searchOpen ? 'search-open' : ''}`}><Search size={16}/><input placeholder="Buscar en CloudOps..." value={query} onFocus={() => setSearchOpen(true)} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Escape' && (setSearchOpen(false), setQuery(''))}/><kbd>⌘ K</kbd>{searchOpen && query && <div className="search-results">{matches.map(r => <Link to={r.path} onClick={() => { setSearchOpen(false); setQuery('') }} key={r.path}><r.icon size={16}/>{r.label}<ArrowRight size={13}/></Link>)}{!matches.length && <small>Sin resultados.</small>}</div>}</div>
+    <button className="icon-button theme-toggle" aria-label="Cambiar tema" title="Cambiar tema" onClick={onTheme}><Moon size={18}/></button><div className="notification-wrap"><button className="icon-button notification-button" aria-label="Notificaciones" onClick={() => setNotifications(!notifications)}><Bell size={18}/><i/></button>{notifications && <div className="notification-pop"><b>Notificaciones</b><p><span className="dot green-dot"/> Arquitectura operativa</p><p><span className="dot amber-dot"/> Revisa el presupuesto de octubre</p><button onClick={() => setNotifications(false)}>Marcar como leídas</button></div>}</div><span className="header-avatar">CM</span></div>
+    {searchOpen && <button className="click-away" onClick={() => { setSearchOpen(false); setQuery('') }} aria-label="Cerrar búsqueda"/>}
+    <span className="backend-indicator" title="El contenido de los módulos continúa usando datos de demostración.">{apiStatus === 'demo' ? 'Modo demo' : apiStatus === 'checking' ? 'Conectando API…' : apiStatus === 'online' ? 'API disponible · demo' : 'API sin conexión · demo'}</span>
+  </header>
+}
+function Shell({ children, title, subtitle }: { children: ReactNode; title: string; subtitle: string }) { return <><div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> CLOUD ENVIRONMENT <span className="eyebrow-sep">/</span> AWS</div><h1>{title}</h1><p>{subtitle}</p></div><div className="heading-right"><button className="date-picker"><span className="live-pulse"/> Producción <ChevronDown size={15}/></button><button className="btn-primary" onClick={() => window.location.href='/planning'}><Plus size={16}/> Nueva propuesta</button></div></div>{children}</> }
+function StatCard({ label, value, change, trend = 'up', icon, accent, note }: { label: string; value: string; change: string; trend?: 'up' | 'down' | 'neutral'; icon: ReactNode; accent: string; note: string }) { return <article className="stat-card"><div className="stat-top"><span className={`stat-icon ${accent}`}>{icon}</span><span className={`trend ${trend}`}>{trend === 'down' ? <ArrowDownRight size={14}/> : <ArrowUpRight size={14}/>} {change}</span></div><p className="stat-label">{label}</p><div className="stat-value">{value}</div><p className="stat-note">{note}</p></article> }
+function Dashboard() { 
+  const { proposal } = useAppData()
+  const [period, setPeriod] = useState('Last 6 months')
+  const [selectedRegion, setSelectedRegion] = useState('us-east-1')
+  const [compareRegion, setCompareRegion] = useState<string | null>(null)
+  
+  // Estado para datos de la API - Región Principal
+  const [overview, setOverview] = useState<any>(null)
+  const [resources, setResources] = useState<any>(null)
+  const [costs, setCosts] = useState<any>(null)
+  const [security, setSecurity] = useState<any>(null)
+  
+  // Estado para datos de la API - Región de Comparación
+  const [overviewCompare, setOverviewCompare] = useState<any>(null)
+  const [resourcesCompare, setResourcesCompare] = useState<any>(null)
+  const [costsCompare, setCostsCompare] = useState<any>(null)
+  const [securityCompare, setSecurityCompare] = useState<any>(null)
+  
+  const [loading, setLoading] = useState(true)
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+
+  // Cargar datos desde la API - Región Principal
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_CLOUD_API_URL
+    if (!apiUrl) {
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    Promise.all([
+      cloudApiGet<any>('/overview').catch(() => null),
+      cloudApiGet<any>(`/resources?region=${selectedRegion}`).catch(() => null),
+      cloudApiGet<any>('/costs').catch(() => null),
+      cloudApiGet<any>('/security/findings').catch(() => null),
+    ]).then(([overviewData, resourcesData, costsData, securityData]) => {
+      setOverview(overviewData)
+      setResources(resourcesData)
+      setCosts(costsData)
+      setSecurity(securityData)
+      setLastUpdate(new Date())
+      setLoading(false)
+    }).catch(() => {
+      setLoading(false)
+    })
+  }, [selectedRegion])
+
+  // Cargar datos de región de comparación
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_CLOUD_API_URL
+    if (!apiUrl || !compareRegion) {
+      setOverviewCompare(null)
+      setResourcesCompare(null)
+      setCostsCompare(null)
+      setSecurityCompare(null)
+      return
+    }
+
+    Promise.all([
+      cloudApiGet<any>('/overview').catch(() => null),
+      cloudApiGet<any>(`/resources?region=${compareRegion}`).catch(() => null),
+      cloudApiGet<any>('/costs').catch(() => null),
+      cloudApiGet<any>('/security/findings').catch(() => null),
+    ]).then(([overviewData, resourcesData, costsData, securityData]) => {
+      setOverviewCompare(overviewData)
+      setResourcesCompare(resourcesData)
+      setCostsCompare(costsData)
+      setSecurityCompare(securityData)
+    })
+  }, [compareRegion])
+
+  // Calcular valores desde datos de API
+  const activeCount = resources?.resources?.length ?? 0
+  const activeRegions = overview?.deployedRegions ?? 0
+  const monthlyCost = costs?.monthlyTotal ?? overview?.monthlyCostUsd ?? 0
+  const securityScore = security?.score ?? 0
+  const currentRegion = overview?.region ?? selectedRegion
+  const hasServices = activeCount > 0 || monthlyCost > 0
+  
+  // Calcular valores de región de comparación
+  const activeCountCompare = resourcesCompare?.resources?.length ?? 0
+  const monthlyCostCompare = costsCompare?.monthlyTotal ?? overviewCompare?.monthlyCostUsd ?? 0
+  const securityScoreCompare = securityCompare?.score ?? 0
+  
+  const regionName = regions.find(r => r.code === selectedRegion)?.name || selectedRegion
+  const compareRegionName = compareRegion ? regions.find(r => r.code === compareRegion)?.name || compareRegion : null
+  
+  const timeSinceUpdate = () => {
+    const diff = Math.floor((new Date().getTime() - lastUpdate.getTime()) / 1000 / 60)
+    if (diff < 1) return 'Actualizado justo ahora'
+    if (diff === 1) return 'Actualizado hace 1 min'
+    return `Actualizado hace ${diff} min`
+  }
+
+  return <Shell title="Tu infraestructura, de un vistazo." subtitle="Monitorea el estado y el rendimiento de tu entorno AWS."><div className="welcome-banner"><div className="welcome-copy"><span className="banner-kicker"><Sparkles size={13}/> WORKSPACE OVERVIEW</span><h2>Buenos días, Camila <span>✦</span></h2><p>{loading ? 'Cargando datos de tu infraestructura...' : hasServices ? 'Tu infraestructura está operativa. Aquí tienes el resumen de hoy.' : 'Empieza agregando servicios desde la sección de Planificación.'}</p><div className="banner-meta"><div style={{display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap'}}><div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><span><span className="live-pulse"/> Región:</span><select value={selectedRegion} onChange={e => setSelectedRegion(e.target.value)} style={{padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: 'inherit', fontSize: '13px', cursor: 'pointer'}}>{regions.slice(0, 8).map(r => <option key={r.code} value={r.code}>{r.name}</option>)}</select></div><div style={{display: 'flex', alignItems: 'center', gap: '8px'}}><span>Comparar con:</span><select value={compareRegion || ''} onChange={e => setCompareRegion(e.target.value || null)} style={{padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: 'inherit', fontSize: '13px', cursor: 'pointer'}}><option value="">Ninguna</option>{regions.slice(0, 8).filter(r => r.code !== selectedRegion).map(r => <option key={r.code} value={r.code}>{r.name}</option>)}</select></div></div><i/><span>{timeSinceUpdate()}</span></div></div><div className="banner-art"><div className="orb orb-one"/><div className="orb orb-two"/><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="art-core"><Cloud size={31}/></div><div className="art-node node-a"><Server size={15}/></div><div className="art-node node-b"><Database size={15}/></div><div className="art-node node-c"><ShieldCheck size={15}/></div></div><div className="banner-corner">AWS CLOUD<br/><span>ARCHITECTURE</span></div></div>
+  <section className="stat-grid"><StatCard label="Costo mensual estimado" value={`$ ${monthlyCost.toFixed(2)}`} change={hasServices ? "Mes actual" : "Sin servicios"} trend="neutral" icon={<Activity size={18}/>} accent="accent-amber" note="vs. mes anterior"/><StatCard label="Servicios activos" value={`${activeCount}`} change={hasServices ? `en ${activeRegions} región${activeRegions !== 1 ? 'es' : ''}` : "Sin desplegar"} trend="neutral" icon={<Cloud size={18}/>} accent="accent-blue" note={hasServices ? "recursos AWS" : "Planifica tu solución"}/><StatCard label="Estado de seguridad" value={securityScore > 0 ? `${securityScore} / 100` : "N/A"} change={hasServices ? "Configurado" : "Pendiente"} trend={securityScore > 80 ? "up" : "neutral"} icon={<ShieldCheck size={18}/>} accent="accent-green" note="Postura de seguridad"/><StatCard label="Disponibilidad" value={hasServices ? "99.98%" : "0%"} change={hasServices ? "Operativo" : "Sin servicios"} trend={hasServices ? "up" : "neutral"} icon={<Activity size={18}/>} accent="accent-violet" note="Últimos 30 días"/></section>
+  {compareRegion && <section className="panel" style={{marginTop: '24px', padding: '24px'}}><div className="panel-head" style={{marginBottom: '20px'}}><div><span className="section-overline">COMPARACIÓN DE REGIONES</span><h3>{regionName} vs {compareRegionName}</h3></div></div><div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px'}}><div style={{padding: '16px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)'}}><div style={{fontSize: '12px', fontWeight: 600, color: 'rgba(59, 130, 246, 1)', marginBottom: '8px'}}>{regionName}</div><div style={{fontSize: '24px', fontWeight: 700, marginBottom: '4px'}}>${monthlyCost.toFixed(2)}</div><div style={{fontSize: '13px', opacity: 0.7}}>{activeCount} recursos activos</div><div style={{fontSize: '13px', opacity: 0.7, marginTop: '4px'}}>Seguridad: {securityScore > 0 ? `${securityScore}/100` : 'N/A'}</div></div><div style={{padding: '16px', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.2)'}}><div style={{fontSize: '12px', fontWeight: 600, color: 'rgba(139, 92, 246, 1)', marginBottom: '8px'}}>{compareRegionName}</div><div style={{fontSize: '24px', fontWeight: 700, marginBottom: '4px'}}>${monthlyCostCompare.toFixed(2)}</div><div style={{fontSize: '13px', opacity: 0.7}}>{activeCountCompare} recursos activos</div><div style={{fontSize: '13px', opacity: 0.7, marginTop: '4px'}}>Seguridad: {securityScoreCompare > 0 ? `${securityScoreCompare}/100` : 'N/A'}</div></div><div style={{padding: '16px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)'}}><div style={{fontSize: '12px', fontWeight: 600, color: 'rgba(16, 185, 129, 1)', marginBottom: '8px'}}>DIFERENCIA</div><div style={{fontSize: '24px', fontWeight: 700, marginBottom: '4px', color: monthlyCost > monthlyCostCompare ? 'rgba(239, 68, 68, 1)' : monthlyCost < monthlyCostCompare ? 'rgba(16, 185, 129, 1)' : 'inherit'}}>${Math.abs(monthlyCost - monthlyCostCompare).toFixed(2)}</div><div style={{fontSize: '13px', opacity: 0.7}}>{Math.abs(activeCount - activeCountCompare)} recursos de diferencia</div><div style={{fontSize: '13px', opacity: 0.7, marginTop: '4px'}}>Δ Seguridad: {Math.abs(securityScore - securityScoreCompare)} pts</div></div></div><div style={{marginTop: '20px', padding: '16px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.15)'}}><div style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, marginBottom: '8px'}}><Sparkles size={14}/> Análisis de comparación</div><p style={{fontSize: '13px', opacity: 0.85, lineHeight: '1.6'}}>{monthlyCost === 0 && monthlyCostCompare === 0 ? 'Ambas regiones están sin servicios desplegados actualmente.' : monthlyCost > monthlyCostCompare ? `${regionName} tiene un costo ${((monthlyCost / Math.max(monthlyCostCompare, 0.01) - 1) * 100).toFixed(1)}% mayor que ${compareRegionName}. Considera migrar workloads para optimizar costos.` : monthlyCost < monthlyCostCompare ? `${compareRegionName} tiene un costo ${((monthlyCostCompare / Math.max(monthlyCost, 0.01) - 1) * 100).toFixed(1)}% mayor que ${regionName}. Tu región principal es más económica.` : 'Ambas regiones tienen costos similares.'}</p></div></section>}
+  <div className="dashboard-grid"><section className="panel cost-panel"><div className="panel-head"><div><span className="section-overline">FINOPS · {currentRegion.toUpperCase()}</span><h3>Costos de infraestructura</h3></div><div className="panel-actions"><button className="select-button" onClick={()=>setPeriod(period==='Last 6 months'?'Last 12 months':'Last 6 months')}>{period}<ChevronDown size={14}/></button><button className="more-button"><MoreHorizontal size={18}/></button></div></div><CostChart period={period}/><div className="chart-footer"><span><i className="footer-dot blue-dot"/> Gasto este mes <b>${monthlyCost.toFixed(2)}</b></span><span><i className="footer-dot gray-dot"/> Presupuesto <b>$400.00</b></span><span className="budget-pill">{((monthlyCost / 400) * 100).toFixed(1)}% utilizado</span></div></section><section className="panel security-panel"><div className="panel-head"><div><span className="section-overline">POSTURA DE SEGURIDAD</span><h3>Todo bajo control</h3></div><Link className="text-link" to="/security">Ver detalles <ArrowRight size={14}/></Link></div><div className="security-score"><div className="score-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="43"/><circle className="score-arc" cx="50" cy="50" r="43"/></svg><div><b>{securityScore}</b><span>/100</span></div></div><div className="score-copy"><span className="status-tag status-good"><span/> Excelente</span><p>Tu cuenta cumple con las recomendaciones clave de AWS Well-Architected.</p></div></div><div className="check-list"><span><CheckCircle2 size={16}/> MFA habilitado <b>3/3 usuarios</b></span><span><CheckCircle2 size={16}/> Cifrado de datos <b>Activo</b></span><span><CheckCircle2 size={16}/> Security groups <b>{security?.findings?.length ?? 0} alertas</b></span></div><Link className="security-bottom" to="/security">Ver reporte de seguridad <ArrowRight size={14}/></Link></section></div>
+  {proposal && <section className="panel proposal-summary"><span className="proposal-symbol"><Check size={18}/></span><div><small>ÚLTIMA PROPUESTA GUARDADA</small><h3>{proposal.name}</h3><p>{proposal.appType} · {proposal.region} · {proposal.users.toLocaleString()} usuarios</p></div><Link to="/planning" className="text-link">Ver propuesta <ArrowRight size={14}/></Link></section>}
+  </Shell> }
+function PageTitle({ kicker, title, text, children }: { kicker: string; title: string; text: string; children?: ReactNode }) { return <div className="section-page-title"><div><span className="section-overline">{kicker}</span><h2>{title}</h2><p>{text}</p></div>{children}</div> }
+function Planning() { 
+  const { proposal, setProposal, selectedServices, setSelectedServices } = useAppData()
+  const [saved, setSaved] = useState(false)
+  const toggle=(name:string)=>setSelectedServices(selectedServices.includes(name)?selectedServices.filter(x=>x!==name):[...selectedServices,name])
+  const submit=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault(); const d=new FormData(e.currentTarget); setProposal({name:String(d.get('name')),appType:String(d.get('appType')),description:String(d.get('description')),region:String(d.get('region')),users:Number(d.get('users')),availability:String(d.get('availability')),services:selectedServices,migration:String(d.get('migration'))});setSaved(true)}; return <Shell title="Planificación cloud" subtitle="Configura una propuesta y define las necesidades de tu solución."><PageTitle kicker="CLOUD PLANNING" title="Nueva propuesta de solución" text="Cuéntanos sobre tu aplicación y prepararemos un blueprint inicial de arquitectura."/><div className="planning-layout"><form className="panel form-panel" onSubmit={submit}><div className="form-section-head"><span className="step-number">01</span><div><h3>Detalles de la solución</h3><p>Datos generales de tu aplicación y el entorno requerido.</p></div></div><div className="form-grid"><label className="field full-field">Nombre de la solución<input name="name" required defaultValue={proposal?.name??''} placeholder="Ej. Plataforma e-commerce"/></label><label className="field">Tipo de aplicación<select name="appType" defaultValue={proposal?.appType??''}><option value="">Selecciona un tipo</option><option>Aplicación web</option><option>API / Microservicios</option><option>Aplicación móvil</option><option>Data & analytics</option><option>Sistema empresarial</option></select></label><label className="field">Región principal<select name="region" defaultValue={proposal?.region??''}><option value="">Selecciona una región</option>{regions.map(r=><option key={r.code}>{r.name} — {r.code}</option>)}</select></label><label className="field full-field">Descripción<textarea name="description" rows={3} defaultValue={proposal?.description??''} placeholder="Describe brevemente el propósito de tu solución"/></label></div><div className="form-divider"/><div className="form-section-head"><span className="step-number">02</span><div><h3>Requisitos de la aplicación</h3><p>Ayúdanos a dimensionar tu infraestructura.</p></div></div><div className="form-grid"><label className="field">Usuarios estimados<input name="users" type="number" min="1" defaultValue={proposal?.users??''} placeholder="0"/><small>Usuarios activos mensuales</small></label><label className="field">Disponibilidad requerida<select name="availability" defaultValue={proposal?.availability??''}><option value="">Selecciona disponibilidad</option><option>Estándar · 99.5%</option><option>Alta · 99.9%</option><option>Crítica · 99.99%</option></select></label><label className="field full-field">Objetivo de migración<select name="migration" defaultValue={proposal?.migration??''}><option value="">Selecciona objetivo</option><option>Migración a la nube</option><option>Modernización de aplicación</option><option>Escalabilidad y crecimiento</option><option>Reducción de costos</option><option>Recuperación ante desastres</option></select></label></div><div className="form-divider"/><div className="form-section-head"><span className="step-number">03</span><div><h3>Servicios seleccionados <span className="count-chip">{selectedServices.length}</span></h3><p>Elige los servicios que conformarán tu solución.</p></div></div><div className="choice-grid">{awsServices.map(s=><button type="button" key={s.name} onClick={()=>toggle(s.name)} className={`choice-card ${selectedServices.includes(s.name)?'chosen':''}`}><span className={`service-icon icon-${s.color}`}><Icon name={s.icon} size={17}/></span><span><b>{s.name.replace('Amazon ','')}</b><small>{s.category}</small></span><span className="check-box">{selectedServices.includes(s.name)&&<Check size={12}/>}</span></button>)}</div><div className="form-footer"><span><LockKeyhole size={14}/> Tus datos se guardan solo en este navegador.</span><button type="submit" className="btn-primary">Guardar propuesta <ArrowRight size={15}/></button></div>{saved&&<div className="inline-success"><CheckCircle2 size={16}/> Propuesta guardada correctamente.</div>}</form><aside className="planning-aside"><div className="panel proposal-preview"><div className="preview-top"><span className="preview-icon"><CloudCog size={19}/></span><span className="status-tag status-draft"><span/> DRAFT</span></div><span className="section-overline">PROPUESTA CLOUD</span><h3>{proposal?.name??'Nueva propuesta'}</h3><p>Arquitectura de referencia para tu solución.</p><div className="preview-stats"><span><small>REGIÓN</small><b>{proposal?.region?.split('—')[1]?.trim() ?? 'No definida'}</b></span><span><small>USUARIOS</small><b>{proposal?.users ? proposal.users.toLocaleString() : '0'}</b></span><span><small>DISPONIBILIDAD</small><b>{proposal?.availability?.split('·')[1]?.trim() ?? 'N/A'}</b></span></div><div className="preview-services"><b>Servicios seleccionados</b>{selectedServices.length === 0 ? <span style={{opacity: 0.5}}>Selecciona servicios arriba</span> : selectedServices.slice(0,5).map(x=><span key={x}><CheckCircle2 size={14}/>{x}</span>)}{selectedServices.length>5&&<small>+{selectedServices.length-5} servicios más</small>}</div></div><div className="aside-note"><Sparkles size={16}/><p><b>¿Sabías que?</b> Diseñar para múltiples zonas de disponibilidad ayuda a mantener tu aplicación operativa ante fallas aisladas.</p></div></aside></div></Shell> }
+function Costs() { 
+  const { serviceCosts, setServiceCosts, monthlyHours, setMonthlyHours } = useAppData()
+  const costItems=awsServices.filter(s=>s.monthly>0)
+  const rows=costItems.map(s=>({service:s,qty:serviceCosts[s.name]??0, hourly:s.monthly/730})).filter(x=>x.qty>0)
+  const total=rows.reduce((a,x)=>a+x.hourly*monthlyHours*x.qty,0);
+  return <Shell title="Costos & economía cloud" subtitle="Estima, comprende y optimiza el costo de tu arquitectura."><PageTitle kicker="COST MANAGEMENT" title="Estimación de costos" text="Precios referenciales para planificación educativa. Los costos reales pueden variar por región y uso."><button className="btn-outline" onClick={()=>window.print()}><Download size={15}/> Exportar reporte</button></PageTitle><div className="cost-summary-grid"><div className="cost-highlight"><span className="summary-icon"><Activity size={18}/></span><small>COSTO MENSUAL ESTIMADO</small><b>$ {total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</b><span className="summary-foot"><span className="live-pulse"/> USD · estimación simulada</span><div className="summary-wave"><svg viewBox="0 0 320 65" preserveAspectRatio="none"><path d="M0 45 C40 35 44 58 82 38 S134 12 165 33 S210 48 242 22 S290 10 320 4" fill="none" stroke="rgba(255,255,255,.38)" strokeWidth="2"/><path d="M0 52 C40 40 60 60 93 48 S148 28 179 43 S232 58 271 34 S300 24 320 19" fill="none" stroke="rgba(255,255,255,.18)" strokeWidth="2"/></svg></div></div><div className="summary-small"><span className="summary-icon blue-soft"><CalendarIcon/></span><small>PROYECCIÓN ANUAL</small><b>$ {(total*12).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</b><p>Basado en tu configuración actual</p><span className="text-link">Ver detalle <ArrowRight size={13}/></span></div><div className="summary-small"><span className="summary-icon green-soft"><ShieldCheck size={17}/></span><small>OPTIMIZACIÓN POTENCIAL</small><b className="saving-value">− $ 38.40</b><p>Oportunidades detectadas</p><span className="text-link">3 recomendaciones <ArrowRight size={13}/></span></div></div><div className="dashboard-grid cost-lower"><section className="panel estimate-panel"><div className="panel-head"><div><span className="section-overline">CALCULADORA</span><h3>Desglose por servicio</h3></div><label className="hours-select">Horas / mes <select value={monthlyHours} onChange={e=>setMonthlyHours(Number(e.target.value))}><option value={730}>730 h (24/7)</option><option value={360}>360 h</option><option value={160}>160 h</option></select></label></div><div className="table-wrap"><table className="cost-table"><thead><tr><th>Servicio</th><th>Precio / h</th><th>Cantidad</th><th>Estimado mensual</th></tr></thead><tbody>{costItems.map(s=>{const qty=serviceCosts[s.name]??0;return <tr key={s.name}><td><span className={`service-icon tiny-icon icon-${s.color}`}><Icon name={s.icon} size={15}/></span><b>{s.name}</b><small>{s.category}</small></td><td>${(s.monthly/730).toFixed(3)}</td><td><div className="quantity-control"><button onClick={()=>setServiceCosts({...serviceCosts,[s.name]:Math.max(0,(serviceCosts[s.name]??0)-1)})} aria-label="Reducir cantidad">−</button><span>{qty}</span><button onClick={()=>setServiceCosts({...serviceCosts,[s.name]:(serviceCosts[s.name]??0)+1})} aria-label="Aumentar cantidad">+</button></div></td><td><b>${(s.monthly/730*monthlyHours*qty).toFixed(2)}</b></td></tr>})}</tbody></table></div><div className="table-total"><span>Total mensual estimado</span><b>${total.toFixed(2)} <small>USD</small></b></div><p className="disclaimer">* Valores de muestra para fines académicos. No representan cotizaciones oficiales de AWS.</p></section><section className="panel cost-distribution"><div className="panel-head"><div><span className="section-overline">ANÁLISIS</span><h3>Distribución de costos</h3></div><button className="more-button"><MoreHorizontal size={18}/></button></div><div className="donut-area"><div className="donut-chart"><div><b>100%</b><small>total</small></div></div><div className="donut-legend">{rows.slice(0,4).map((row,i)=><div key={row.service.name}><i className={`donut-dot dot-${i}`}/><span>{row.service.name.replace('Amazon ','')}</span><b>{total?Math.round(row.service.monthly/730*monthlyHours*row.qty/total*100):0}%</b></div>)}</div></div><div className="cost-insight"><span><Sparkles size={14}/></span><p><b>Oportunidad de ahorro</b> Considera instancias reservadas para cargas de trabajo estables.</p><ArrowRight size={15}/></div></section></div></Shell> }
+function CalendarIcon(){return <Activity size={17}/>}
+export default function App(){const [menuOpen,setMenuOpen]=useState(false);const [dark,setDark]=useState(false);const path=useLocation().pathname;return <div className={`app-shell ${dark?'dark':''}`}><Sidebar open={menuOpen} onClose={()=>setMenuOpen(false)}/><div className="main-column"><Header onMenu={()=>setMenuOpen(true)} onTheme={()=>setDark(!dark)}/><main className="main-content" key={path}><Routes><Route path="/" element={<Dashboard/>}/><Route path="/dashboard" element={<Dashboard/>}/><Route path="/planning" element={<Planning/>}/><Route path="/costs" element={<Costs/>}/><Route path="/infrastructure" element={<InteractiveInfrastructure/>}/><Route path="/security" element={<InteractiveSecurity/>}/><Route path="/network" element={<InteractiveNetwork/>}/><Route path="/services" element={<InteractiveServices/>}/><Route path="*" element={<Dashboard/>}/></Routes><footer className="app-footer"><span>© 2026 CloudOps Dashboard</span><span><i className="footer-live-dot"/>Todos los sistemas operativos</span><span>Diseñado para Cloud Foundations</span></footer></main></div></div>}

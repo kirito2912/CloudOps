@@ -1,30 +1,42 @@
 import { useState } from 'react'
 import { Activity, ArrowRight, Check, CheckCircle2, ChevronDown, ChevronUp, Cloud, KeyRound, LockKeyhole, ShieldAlert, UserRound } from 'lucide-react'
-import { useLocalStorageState } from '../hooks/useLocalStorageState'
+import { useAppData } from '../context/AppDataContext'
 
 type Control = { id: string; name: string; description: string; status: 'good' | 'review'; recommendation: string }
-const defaultControls: Control[] = [
-  { id: 'mfa', name: 'MFA en usuarios IAM', description: '3 de 3 usuarios con autenticación multifactor', status: 'good', recommendation: 'Mantén MFA habilitado en cada identidad humana y usa llaves físicas para cuentas privilegiadas.' },
-  { id: 'least-privilege', name: 'Principio de mínimo privilegio', description: 'Políticas revisadas y acceso por roles', status: 'good', recommendation: 'Limita acciones y recursos a lo estrictamente necesario; revisa permisos cuando cambien los equipos.' },
-  { id: 'encryption', name: 'Cifrado en reposo', description: 'Amazon RDS y buckets S3 cifrados', status: 'good', recommendation: 'Configura cifrado con KMS y documenta quién administra las llaves.' },
-  { id: 'https', name: 'Cifrado en tránsito', description: 'HTTPS activo en puntos de entrada', status: 'good', recommendation: 'Fuerza TLS moderno en los puntos de entrada y evita protocolos HTTP sin cifrar.' },
-  { id: 'rotation', name: 'Rotación de credenciales', description: '1 access key requiere revisión', status: 'review', recommendation: 'Desactiva llaves de acceso que no se utilicen y rota credenciales de larga duración.' },
-  { id: 'cloudtrail', name: 'CloudTrail & auditoría', description: 'Registro activo en us-east-1', status: 'good', recommendation: 'Centraliza eventos en una cuenta de auditoría y habilita integridad de archivos de log.' },
-]
-const defaultUsers = [
-  { id: 'camila', name: 'Camila Mendoza', role: 'Administrator', initials: 'CM', mfa: true },
-  { id: 'andres', name: 'Andrés Rojas', role: 'Developer', initials: 'AR', mfa: true },
-  { id: 'service', name: 'Service role', role: 'Application · IAM Role', initials: 'SV', mfa: true },
-]
 
 export default function InteractiveSecurity() {
-  const [controls, setControls] = useLocalStorageState('cloudops-security-controls', defaultControls)
-  const [users, setUsers] = useLocalStorageState('cloudops-iam-users', defaultUsers)
+  const { securityControls, setSecurityControls, iamUsers, setIamUsers } = useAppData()
+  
+  // Inicializar con valores por defecto si están vacíos
+  const defaultControls: Control[] = [
+    { id: 'mfa', name: 'MFA en usuarios IAM', description: '3 de 3 usuarios con autenticación multifactor', status: 'good', recommendation: 'Mantén MFA habilitado en cada identidad humana y usa llaves físicas para cuentas privilegiadas.' },
+    { id: 'least-privilege', name: 'Principio de mínimo privilegio', description: 'Políticas revisadas y acceso por roles', status: 'good', recommendation: 'Limita acciones y recursos a lo estrictamente necesario; revisa permisos cuando cambien los equipos.' },
+    { id: 'encryption', name: 'Cifrado en reposo', description: 'Amazon RDS y buckets S3 cifrados', status: 'good', recommendation: 'Configura cifrado con KMS y documenta quién administra las llaves.' },
+    { id: 'https', name: 'Cifrado en tránsito', description: 'HTTPS activo en puntos de entrada', status: 'good', recommendation: 'Fuerza TLS moderno en los puntos de entrada y evita protocolos HTTP sin cifrar.' },
+    { id: 'rotation', name: 'Rotación de credenciales', description: '1 access key requiere revisión', status: 'review', recommendation: 'Desactiva llaves de acceso que no se utilicen y rota credenciales de larga duración.' },
+    { id: 'cloudtrail', name: 'CloudTrail & auditoría', description: 'Registro activo en us-east-1', status: 'good', recommendation: 'Centraliza eventos en una cuenta de auditoría y habilita integridad de archivos de log.' },
+  ]
+  
+  const defaultUsers = [
+    { id: 'camila', name: 'Camila Mendoza', role: 'Administrator', initials: 'CM', mfa: true },
+    { id: 'andres', name: 'Andrés Rojas', role: 'Developer', initials: 'AR', mfa: true },
+    { id: 'service', name: 'Service role', role: 'Application · IAM Role', initials: 'SV', mfa: true },
+  ]
+  
+  const controls = securityControls.length > 0 ? securityControls : defaultControls
+  const users = iamUsers.length > 0 ? iamUsers : defaultUsers
+  
   const [expanded, setExpanded] = useState<string | null>('rotation')
   const [showUsers, setShowUsers] = useState(true)
   const passing = controls.filter(control => control.status === 'good').length
-  const toggleControl = (id: string) => setControls(current => current.map(control => control.id === id ? { ...control, status: control.status === 'good' ? 'review' : 'good' } : control))
-  const toggleMfa = (id: string) => setUsers(current => current.map(user => user.id === id ? { ...user, mfa: !user.mfa } : user))
+  const toggleControl = (id: string) => {
+    const updated = controls.map(control => control.id === id ? { ...control, status: control.status === 'good' ? 'review' : 'good' } : control)
+    setSecurityControls(updated)
+  }
+  const toggleMfa = (id: string) => {
+    const updated = users.map(user => user.id === id ? { ...user, mfa: !user.mfa } : user)
+    setIamUsers(updated)
+  }
   return <>
     <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> SECURITY CENTER <span className="eyebrow-sep">/</span> IAM</div><h1>Seguridad & IAM</h1><p>Explora controles, revisa recomendaciones y gestiona las identidades de ejemplo.</p></div><div className="heading-right"><span className={`status-tag ${passing === controls.length ? 'status-good' : 'status-warn'}`}><span/> {passing}/{controls.length} controles al día</span></div></div>
     <div className="security-hero-grid interactive-security-hero"><section className="security-overview panel"><div className="overview-score"><div className="large-score-ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52"/><circle className="score-arc" cx="60" cy="60" r="52" style={{ stroke: passing < controls.length ? '#f59e0b' : '#22c55e', strokeDashoffset: `${327 - (passing / controls.length) * 327}` }}/></svg><div><b>{Math.round(passing / controls.length * 100)}</b><small>de 100</small></div></div><div><span className={`status-tag ${passing === controls.length ? 'status-good' : 'status-warn'}`}><span/> {passing === controls.length ? 'Postura saludable' : 'Revisión recomendada'}</span><h3>{passing === controls.length ? 'Tu cuenta está al día.' : 'Hay controles para revisar.'}</h3><p>Actualiza el estado de cada control conforme completes las recomendaciones de seguridad.</p></div></div><div className="score-progress"><span><i style={{ width: `${passing / controls.length * 100}%`, background: passing === controls.length ? '#22c55e' : '#f59e0b' }}/></span><b>{passing}/{controls.length}</b></div><div className="overview-foot"><span><span className="live-pulse"/>Estado guardado en este navegador</span><span>Controles educativos de ejemplo</span></div></section><section className="shared-panel panel"><span className="section-overline">AWS SHARED RESPONSIBILITY MODEL</span><h3>¿Quién protege cada capa?</h3><p>Las responsabilidades cambian según el servicio que uses, pero los controles de tus datos e identidades son tuyos.</p><div className="responsibility"><div><span className="resp-icon aws-resp"><Cloud size={17}/></span><span><b>Seguridad DE la nube</b><small>AWS · Centros de datos, hardware, red global e hipervisor.</small></span><span className="resp-check"><Check size={14}/></span></div><div><span className="resp-icon you-resp"><LockKeyhole size={17}/></span><span><b>Seguridad EN la nube</b><small>Cliente · Datos, IAM, sistema operativo, aplicación y firewall.</small></span><span className="resp-you">TÚ</span></div></div></section></div>
