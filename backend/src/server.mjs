@@ -169,7 +169,8 @@ const server = createServer((request, response) => {
   }
 
   const url = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`)
-  if (request.method === 'POST' && url.pathname === '/analyze-project') {
+  const pathname = url.pathname.replace(/\/$/, '') || '/'
+  if (request.method === 'POST' && pathname === '/analyze-project') {
     let body = ''
     request.on('data', chunk => { body += chunk; if (body.length > 10000) request.destroy() })
     request.on('end', async () => {
@@ -187,16 +188,16 @@ const server = createServer((request, response) => {
     sendJson(response, 405, { error: 'Method not allowed' })
     return
   }
-  if (url.pathname === '/health') {
+  if (pathname === '/health') {
     sendJson(response, 200, { status: 'ok', source: 'simulated', timestamp: new Date().toISOString() })
-  } else if (url.pathname === '/overview') {
+  } else if (pathname === '/overview') {
     sendJson(response, 200, generateDemoOverview())
-  } else if (url.pathname === '/resources') {
+  } else if (pathname === '/resources') {
     const region = url.searchParams.get('region') || 'us-east-1'
     sendJson(response, 200, generateDemoResources(region))
-  } else if (url.pathname === '/costs') {
+  } else if (pathname === '/costs') {
     sendJson(response, 200, generateDemoCosts())
-  } else if (url.pathname === '/security/findings') {
+  } else if (pathname === '/security/findings') {
     sendJson(response, 200, generateDemoSecurityFindings())
   } else {
     sendJson(response, 404, { error: 'Not found' })
