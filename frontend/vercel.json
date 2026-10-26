@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/cloudops/analyze-project", "destination": "/api/analyze-project" },
     { "source": "/api/cloudops/:path*", "destination": "https://cloudops-1.onrender.com/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

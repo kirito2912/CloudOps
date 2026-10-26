@@ -172,8 +172,8 @@ function Planning() {
   const analyzeProject = async () => {
     setAnalyzing(true); setAnalysisError(''); setAnalysis(null)
     try {
-      const base = import.meta.env.PROD ? '/api/cloudops' : import.meta.env.VITE_CLOUD_API_URL?.replace(/\/$/, '') || 'http://localhost:3001'
-      const response = await fetch(`${base}/analyze-project`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ url: projectUrl.trim() }), signal: AbortSignal.timeout(20000) })
+      const endpoint = import.meta.env.PROD ? '/api/analyze-project' : `${import.meta.env.VITE_CLOUD_API_URL?.replace(/\/$/, '') || 'http://localhost:3001'}/analyze-project`
+      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ url: projectUrl.trim() }), signal: AbortSignal.timeout(20000) })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error || 'No se pudo analizar el enlace.')
       setAnalysis(payload)
