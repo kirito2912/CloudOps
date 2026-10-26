@@ -2,7 +2,9 @@
  * Browser-side API client. AWS credentials must remain on a trusted backend;
  * this client only calls the app's API (for example API Gateway + Lambda).
  */
-const apiBaseUrl = import.meta.env.VITE_CLOUD_API_URL?.replace(/\/$/, '')
+const apiBaseUrl = import.meta.env.PROD
+  ? '/api/cloudops'
+  : import.meta.env.VITE_CLOUD_API_URL?.replace(/\/$/, '') || 'http://localhost:3001'
 
 export type CloudApiStatus = 'not-configured' | 'available' | 'unavailable'
 
@@ -24,6 +26,7 @@ export async function cloudApiGet<T>(path: string, accessToken?: string): Promis
 
 declare global {
   interface ImportMetaEnv {
+    readonly PROD: boolean
     readonly VITE_CLOUD_API_URL?: string
   }
   interface ImportMeta {

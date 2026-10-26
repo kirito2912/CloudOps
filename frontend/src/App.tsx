@@ -39,9 +39,9 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 function Header({ onMenu, onTheme }: { onMenu: () => void; onTheme: () => void }) {
   const location = useLocation(); const [query, setQuery] = useState(''); const [searchOpen, setSearchOpen] = useState(false); const [notifications, setNotifications] = useState(false)
-  const [apiStatus, setApiStatus] = useState<'demo' | 'checking' | 'online' | 'offline'>(import.meta.env.VITE_CLOUD_API_URL ? 'checking' : 'demo')
+  const [apiStatus, setApiStatus] = useState<'demo' | 'checking' | 'online' | 'offline'>(import.meta.env.VITE_CLOUD_API_URL || import.meta.env.PROD ? 'checking' : 'demo')
   useEffect(() => {
-    if (!import.meta.env.VITE_CLOUD_API_URL) return
+    if (!import.meta.env.VITE_CLOUD_API_URL && !import.meta.env.PROD) return
     let active = true
     cloudApiGet<{ status: string }>('/health').then(() => { if (active) setApiStatus('online') }).catch(() => { if (active) setApiStatus('offline') })
     return () => { active = false }
@@ -80,7 +80,7 @@ function Dashboard() {
   // Cargar datos desde la API - Región Principal
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_CLOUD_API_URL
-    if (!apiUrl) {
+    if (!apiUrl && !import.meta.env.PROD) {
       setLoading(false)
       return
     }
@@ -106,7 +106,7 @@ function Dashboard() {
   // Cargar datos de región de comparación
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_CLOUD_API_URL
-    if (!apiUrl || !compareRegion) {
+    if ((!apiUrl && !import.meta.env.PROD) || !compareRegion) {
       setOverviewCompare(null)
       setResourcesCompare(null)
       setCostsCompare(null)
@@ -172,7 +172,7 @@ function Planning() {
   const analyzeProject = async () => {
     setAnalyzing(true); setAnalysisError(''); setAnalysis(null)
     try {
-      const base = import.meta.env.VITE_CLOUD_API_URL?.replace(/\/$/, '') || 'http://localhost:3001'
+      const base = import.meta.env.PROD ? '/api/cloudops' : import.meta.env.VITE_CLOUD_API_URL?.replace(/\/$/, '') || 'http://localhost:3001'
       const response = await fetch(`${base}/analyze-project`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ url: projectUrl.trim() }), signal: AbortSignal.timeout(20000) })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error || 'No se pudo analizar el enlace.')
