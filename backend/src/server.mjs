@@ -3,10 +3,11 @@ import { lookup } from 'node:dns/promises'
 import { isIP } from 'node:net'
 
 const port = Number(process.env.PORT || 3001)
-const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:5173')
-  .split(',')
-  .map(origin => origin.trim())
-  .filter(Boolean)
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'https://cloud-ops-omega.vercel.app',
+  ...(process.env.FRONTEND_ORIGINS || '').split(','),
+].map(origin => origin.trim().replace(/\/$/, '')).filter(Boolean))
 
 // Estado inicial VACÍO - sin servicios desplegados
 function generateDemoOverview() {
@@ -154,7 +155,7 @@ async function analyzeProject(value) {
 
 const server = createServer((request, response) => {
   const origin = request.headers.origin
-  if (origin && allowedOrigins.includes(origin)) {
+  if (origin && allowedOrigins.has(origin.replace(/\/$/, ''))) {
     response.setHeader('Access-Control-Allow-Origin', origin)
     response.setHeader('Vary', 'Origin')
     response.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type')

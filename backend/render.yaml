@@ -5,3 +5,6 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health
+    envVars:
+      - key: FRONTEND_ORIGINS
+        value: https://cloud-ops-omega.vercel.app,http://localhost:5173
