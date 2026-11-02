@@ -24,11 +24,11 @@ Endpoints de demostración: `GET /health`, `/overview`, `/resources?region=us-ea
 
 ### Frontend
 
-En Vercel importa el repositorio y fija **Root Directory** en `frontend`; build `npm run build`, output `dist`. `frontend/vercel.json` configura el fallback SPA.
+En Vercel importa el repositorio y fija **Root Directory** en `frontend`; build `npm run build`, output `dist`. `frontend/vercel.json` configura el fallback SPA y enruta el análisis por `/api/cloudops/analyze-project` para que el navegador no llame directamente a otro dominio.
 
 También puedes crear un Static Site en Render usando Root Directory `frontend`, build `npm install && npm run build` y publish directory `dist`.
 
-Configura `VITE_CLOUD_API_URL` con la URL pública del backend, por ejemplo `https://cloudops-api.onrender.com`. Vite incorpora esta URL en el bundle público; solo debe contener una URL, nunca secretos.
+En desarrollo, `VITE_CLOUD_API_URL` puede apuntar a la API; si no se configura, se usa `http://localhost:3001`. En producción sobre Vercel, el análisis usa la función `/api/analyze-project` del frontend mediante una ruta del mismo origen, por lo que no depende de CORS del backend.
 
 ### Backend
 
