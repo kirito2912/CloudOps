@@ -57,18 +57,37 @@ async function analyzeProject(value) {
     const encodedOwner = encodeURIComponent(owner)
     const encodedRepo = encodeURIComponent(repo)
     const details = await githubJson(`https://api.github.com/repos/${encodedOwner}/${encodedRepo}`)
-    const [languages, readmeResponse] = await Promise.all([
+    const [languages, readmeResponse, contents] = await Promise.all([
       githubJson(details.languages_url).catch(() => ({})),
       fetch(`https://api.github.com/repos/${encodedOwner}/${encodedRepo}/readme`, { headers: { Accept: 'application/vnd.github.raw+json', 'User-Agent': 'CloudOps-Project-Analyzer' }, signal: AbortSignal.timeout(12000) }).catch(() => null),
+      githubJson(`https://api.github.com/repos/${encodedOwner}/${encodedRepo}/git/trees/${encodeURIComponent(details.default_branch)}?recursive=1`).catch(() => ({ tree: [] })),
     ])
     const readme = readmeResponse?.ok ? await readmeResponse.text() : ''
     const languageList = Object.keys(languages)
-    const text = `${details.description || ''} ${readme}`.toLowerCase()
+    const paths = (contents.tree || []).filter(item => item.type === 'blob').map(item => item.path.toLowerCase())
+    const text = `${details.description || ''} ${readme} ${paths.join(' ')}`.toLowerCase()
     const recommendations = ['AWS IAM', 'Amazon VPC', 'Amazon CloudWatch']
     if (/react|vue|angular|next|web|frontend/.test(text) || languageList.some(name => ['JavaScript', 'TypeScript', 'HTML', 'CSS'].includes(name))) recommendations.push('Amazon CloudFront', 'Amazon S3')
     if (/api|express|django|fastapi|spring|backend|node/.test(text) || languageList.some(name => ['Python', 'Java', 'Go', 'Ruby'].includes(name))) recommendations.push('Amazon EC2', 'Amazon RDS')
     if (/data|analytics|machine learning|dataset/.test(text)) recommendations.push('Amazon S3')
-    return { type: 'github', name: details.full_name, description: details.description || 'Sin descripción pública.', url: details.html_url, visibility: details.private ? 'Privado' : 'Público', stars: details.stargazers_count, updatedAt: details.updated_at, languages: languageList, recommendations: [...new Set(recommendations)], findings: [details.archived ? 'El repositorio está archivado; confirma si sigue en mantenimiento.' : 'Repositorio accesible y activo para una evaluación inicial.', languageList.length ? `Tecnologías detectadas: ${languageList.slice(0, 6).join(', ')}.` : 'No se detectaron lenguajes en los archivos del repositorio.'] }
+    const findings = [details.archived ? 'CRÍTICO · El repositorio está archivado; los cambios y avisos de seguridad pueden no recibir mantenimiento.' : 'INFO · Repositorio público accesible; el análisis cubrió metadatos, lenguajes, README y árbol de archivos.']
+    if (contents.truncated) findings.push('ALCANCE · GitHub truncó el árbol de archivos; los hallazgos basados en rutas pueden estar incompletos.')
+    if (languageList.length) findings.push(`INFO · Lenguajes detectados por GitHub: ${languageList.slice(0, 8).join(', ')}.`)
+    if (!paths.some(path => /(^|\/)(test|tests|spec|specs)\//.test(path) || /\.(test|spec)\./.test(path))) findings.push('MEDIO · No se identificaron pruebas automatizadas por nombres de archivo; confirma si existen en otro flujo.')
+    if (!paths.some(path => path.startsWith('.github/workflows/'))) findings.push('MEDIO · No se detectaron workflows de CI en .github/workflows; automatiza validaciones y despliegues reproducibles.')
+    if (!paths.some(path => /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|poetry\.lock|pipfile\.lock|cargo\.lock|go\.sum)$/.test(path))) findings.push('MEDIO · No se detectó un archivo de bloqueo de dependencias; fija versiones para mejorar reproducibilidad.')
+    if (!paths.some(path => /(^|\/)(dockerfile|docker-compose\.ya?ml)$/.test(path))) findings.push('INFO · No se identificó configuración Docker en el árbol del repositorio.')
+    if ((contents.tree || []).some(item => item.path?.toLowerCase().includes('.env') && !item.path.toLowerCase().includes('.env.example'))) findings.push('ALTO · Se encontraron archivos con nombre .env en el árbol público; revisa que no contengan credenciales y rota cualquier secreto expuesto.')
+    const actions = [
+      ...(details.archived ? ['Definir un responsable y un plan de actualización o migrar a un repositorio mantenido.'] : []),
+      ...(!paths.some(path => path.startsWith('.github/workflows/')) ? ['Añadir CI con lint, pruebas y escaneo de dependencias en cada pull request.'] : []),
+      ...(!paths.some(path => /(^|\/)(test|tests|spec|specs)\//.test(path) || /\.(test|spec)\./.test(path)) ? ['Incorporar pruebas unitarias y de integración para los flujos críticos antes de desplegar.'] : []),
+      ...(!paths.some(path => /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|poetry\.lock|pipfile\.lock|cargo\.lock|go\.sum)$/.test(path)) ? ['Generar y versionar el lockfile de dependencias y automatizar alertas de vulnerabilidades.'] : []),
+      ...((contents.tree || []).some(item => item.path?.toLowerCase().includes('.env') && !item.path.toLowerCase().includes('.env.example')) ? ['Auditar los archivos .env publicados, revocar secretos expuestos y mover credenciales a un gestor de secretos.'] : []),
+      'Configurar mínimo privilegio para identidades, registros centralizados, alarmas y copias de seguridad verificadas en la arquitectura AWS.',
+      'Antes de producción, documentar RPO/RTO, estrategia de recuperación y objetivos de disponibilidad para seleccionar servicios y regiones.'
+    ]
+    return { type: 'github', name: details.full_name, description: details.description || 'Sin descripción pública.', summary: `${details.full_name} usa ${languageList.slice(0, 5).join(', ') || 'tecnologías no identificadas'}; ${paths.length} archivos visibles en la rama ${details.default_branch}. Se evaluaron señales públicas de automatización, pruebas, dependencias y configuración.`, url: details.html_url, visibility: details.private ? 'Privado' : 'Público', stars: details.stargazers_count, updatedAt: details.updated_at, defaultBranch: details.default_branch, fileCount: paths.length, languages: languageList, technologies: languageList, recommendations: actions, suggestedServices: [...new Set(recommendations)], findings }
   }
 
   let response
@@ -91,7 +110,16 @@ async function analyzeProject(value) {
   const recommendations = ['AWS IAM', 'Amazon VPC', 'Amazon CloudWatch', 'Amazon CloudFront']
   if (/api|graphql/.test(html.toLowerCase())) recommendations.push('Amazon EC2', 'Amazon RDS')
   if (/wordpress|shopify|woocommerce|magento/.test(html.toLowerCase())) recommendations.push('Amazon S3', 'Amazon CloudFront')
-  return { type: 'website', name: title, description: description || 'No se encontró una descripción pública en la página.', url: url.href, status: response.status, contentType: contentType || 'No informado', technologies, recommendations, findings: [response.headers.get('strict-transport-security') ? 'Se detectó una política HSTS.' : 'No se detectó la cabecera HSTS en la respuesta.', response.headers.get('content-security-policy') ? 'Se detectó una política CSP.' : 'No se detectó la cabecera CSP en la respuesta.', technologies.length ? `Indicadores tecnológicos en HTML: ${technologies.join(', ')}.` : 'La tecnología no se pudo identificar solo desde el HTML público.'] }
+  const findings = [response.headers.get('strict-transport-security') ? 'INFO · Se detectó la cabecera HSTS.' : 'MEDIO · No se detectó HSTS; si el sitio funciona íntegramente por HTTPS, habilítala tras confirmar todos los subdominios.', response.headers.get('content-security-policy') ? 'INFO · Se detectó una política CSP.' : 'MEDIO · No se detectó CSP; define una política gradual para reducir el riesgo de XSS.', response.headers.get('x-content-type-options') ? 'INFO · Se detectó X-Content-Type-Options.' : 'BAJO · No se detectó X-Content-Type-Options: nosniff.', response.headers.get('referrer-policy') ? 'INFO · Se detectó Referrer-Policy.' : 'BAJO · No se detectó Referrer-Policy; limita la exposición de URLs de referencia.', technologies.length ? `INFO · Indicadores tecnológicos en HTML: ${technologies.join(', ')}.` : 'INFO · La tecnología no se pudo identificar solo desde el HTML público.', `INFO · Respuesta HTTP ${response.status}; tipo de contenido ${contentType || 'no informado'}.`]
+  const actions = [
+    ...(!response.headers.get('strict-transport-security') ? ['Verificar HTTPS y habilitar HSTS con max-age gradual; incluir subdominios solo cuando todos sean HTTPS.'] : []),
+    ...(!response.headers.get('content-security-policy') ? ['Definir una Content-Security-Policy compatible con los recursos reales y probarla primero en modo Report-Only.'] : []),
+    ...(!response.headers.get('x-content-type-options') ? ['Añadir X-Content-Type-Options: nosniff y validar los tipos MIME servidos.'] : []),
+    ...(!response.headers.get('referrer-policy') ? ['Configurar Referrer-Policy: strict-origin-when-cross-origin o una política más restrictiva según la aplicación.'] : []),
+    'Revisar controles no visibles desde una petición pública: autenticación, autorización, dependencias, configuración TLS, exposición de datos y protección de APIs.',
+    'Ejecutar pruebas autorizadas de seguridad y rendimiento en un entorno controlado; esta inspección no sustituye una auditoría dinámica.'
+  ]
+  return { type: 'website', name: title, description: description || 'No se encontró una descripción pública en la página.', summary: `La URL respondió con HTTP ${response.status} y se revisaron cabeceras de seguridad, metadatos HTML e indicadores tecnológicos visibles.`, url: url.href, status: response.status, contentType: contentType || 'No informado', technologies, recommendations: actions, suggestedServices: recommendations, findings }
 }
 
 export default async function handler(request, response) {
