@@ -104,13 +104,31 @@ async function fetchPublicPage(initialUrl) {
   let url = initialUrl
   for (let redirects = 0; redirects <= 4; redirects += 1) {
     await validatePublicUrl(url.href)
-    const response = await fetch(url, { headers: { 'User-Agent': 'CloudOps-Project-Analyzer' }, signal: AbortSignal.timeout(12000), redirect: 'manual' })
+    const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CloudOps-Project-Analyzer/1.0)', Accept: 'text/html,application/xhtml+xml,application/json;q=0.8,*/*;q=0.5' }, signal: AbortSignal.timeout(18000), redirect: 'manual' })
     if (![301, 302, 303, 307, 308].includes(response.status)) return response
     const location = response.headers.get('location')
     if (!location || redirects === 4) throw new Error('El sitio redirigió demasiadas veces para analizarlo de forma segura.')
     url = new URL(location, url)
   }
   throw new Error('No se pudo seguir la redirección del sitio.')
+}
+
+async function readLimitedText(response, maxBytes = 500000) {
+  if (!response.body) return ''
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let bytes = 0
+  let text = ''
+  while (bytes < maxBytes) {
+    const { done, value } = await reader.read()
+    if (done) break
+    const chunk = value.subarray(0, maxBytes - bytes)
+    bytes += chunk.byteLength
+    text += decoder.decode(chunk, { stream: bytes < maxBytes })
+    if (chunk.byteLength < value.byteLength) break
+  }
+  reader.cancel().catch(() => {})
+  return text + decoder.decode()
 }
 
 async function getJson(url, headers = {}) {
@@ -142,14 +160,17 @@ async function analyzeProject(value) {
   }
 
   const response = await fetchPublicPage(url)
-  if (!response.ok) throw new Error(`El sitio respondió con HTTP ${response.status}.`)
+  if (!response.ok) throw new Error(response.status === 403 || response.status === 429 ? `El sitio bloqueó el análisis automático (HTTP ${response.status}).` : `El sitio respondió con HTTP ${response.status}.`)
   const contentType = response.headers.get('content-type') || ''
-  const html = contentType.includes('text/html') ? (await response.text()).slice(0, 500000) : ''
-  const title = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() || url.hostname
-  const description = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']*)/i)?.[1] || ''
+  const html = /text\/(html|xhtml)/i.test(contentType) || !contentType ? await readLimitedText(response) : ''
+  const decode = (value = '') => value.replace(/&amp;/gi, '&').replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'").replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').trim()
+  const title = decode(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, '')) || url.hostname
+  const descriptionTag = html.match(/<meta\b[^>]*>/gi)?.find(tag => /\bname\s*=\s*["']description["']/i.test(tag))
+  const description = decode(descriptionTag?.match(/\bcontent\s*=\s*(["'])(.*?)\1/i)?.[2] || '')
   const technologies = [...new Set([...(html.match(/(?:react|vue|angular|next|nuxt|wordpress|shopify|laravel|django|next\.js)/gi) || []).map(x => x.toLowerCase())])]
   const recommendations = ['AWS IAM', 'Amazon VPC', 'Amazon CloudWatch', 'Amazon CloudFront']
   if (/api|graphql/.test(html.toLowerCase())) recommendations.push('Amazon EC2', 'Amazon RDS')
+  if (/wordpress|shopify|woocommerce|magento/.test(html.toLowerCase())) recommendations.push('Amazon S3', 'Amazon CloudFront')
   return { type: 'website', name: title, description: description || 'No se encontró una descripción pública en la página.', url: url.href, status: response.status, contentType: contentType || 'No informado', technologies, recommendations, findings: [response.headers.get('strict-transport-security') ? 'Se detectó una política HSTS.' : 'No se detectó la cabecera HSTS en la respuesta.', response.headers.get('content-security-policy') ? 'Se detectó una política CSP.' : 'No se detectó la cabecera CSP en la respuesta.', technologies.length ? `Indicadores tecnológicos en HTML: ${technologies.join(', ')}.` : 'La tecnología no se pudo identificar solo desde el HTML público.'] }
 }
 

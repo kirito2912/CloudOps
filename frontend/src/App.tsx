@@ -170,14 +170,17 @@ function Planning() {
   const [analysisError, setAnalysisError] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const analyzeProject = async () => {
+    const input = projectUrl.trim()
+    const normalizedUrl = /^https?:\/\//i.test(input) ? input : `https://${input}`
     setAnalyzing(true); setAnalysisError(''); setAnalysis(null)
     try {
-      const endpoint = import.meta.env.PROD ? '/api/analyze-project' : `${import.meta.env.VITE_CLOUD_API_URL?.replace(/\/$/, '') || 'http://localhost:3001'}/analyze-project`
-      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ url: projectUrl.trim() }), signal: AbortSignal.timeout(20000) })
-      const payload = await response.json()
+      const configuredApi = import.meta.env.VITE_CLOUD_API_URL?.replace(/\/$/, '')
+      const endpoint = configuredApi ? `${configuredApi}/analyze-project` : import.meta.env.PROD ? '/api/cloudops/analyze-project' : 'http://localhost:3001/analyze-project'
+      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ url: normalizedUrl }), signal: AbortSignal.timeout(30000) })
+      const payload = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(payload.error || 'No se pudo analizar el enlace.')
       setAnalysis(payload)
-    } catch (error) { setAnalysisError(error instanceof Error ? error.message : 'No se pudo conectar con el servicio de análisis.') }
+    } catch (error) { setAnalysisError(error instanceof DOMException && error.name === 'TimeoutError' ? 'El sitio tardó demasiado en responder. Comprueba que sea público e inténtalo de nuevo.' : error instanceof TypeError ? 'No se pudo conectar con el servicio. Revisa la configuración de la API e inténtalo de nuevo.' : error instanceof Error ? error.message : 'No se pudo conectar con el servicio de análisis.') }
     finally { setAnalyzing(false) }
   }
   const toggle=(name:string)=>setSelectedServices(selectedServices.includes(name)?selectedServices.filter(x=>x!==name):[...selectedServices,name])
